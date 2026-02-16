@@ -253,3 +253,121 @@ export function FabricsSection({
     </section>
   )
 }
+
+"use client"
+
+import { useState, useEffect } from "react"
+import { Plus, Trash2, Edit3, Shirt, Minus, Scissors, Lock, Unlock, X, ShoppingBag } from "lucide-react"
+
+export function FabricsSection({ fabrics, onFabricsChange }: any) {
+  // حل مشكلة الخطأ في الصورة رقم 7
+  const [mounted, setMounted] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [showPin, setShowPin] = useState(false)
+  const [pin, setPin] = useState("")
+  const [orders, setOrders] = useState<Record<string, any>>({})
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null
+
+  const checkPin = () => {
+    if (pin === "2026") {
+      setIsAdmin(true)
+      setShowPin(false)
+      setPin("")
+    } else {
+      alert("الرمز غير صحيح!")
+    }
+  }
+
+  const updateQty = (id: string, delta: number) => {
+    setOrders(prev => ({
+      ...prev,
+      [id]: { ...prev[id], qty: Math.max(0, (prev[id]?.qty || 0) + delta) }
+    }))
+  }
+
+  return (
+    <section className="py-10 px-4 max-w-4xl mx-auto">
+      {/* العنوان - اضغط عليه لفتح رمز الدخول */}
+      <div className="flex justify-between items-center mb-6 border-b pb-4 cursor-pointer" onClick={() => setShowPin(true)}>
+        <h2 className="text-xl font-bold text-primary">الأقمشة وتفصيل الثياب</h2>
+        {isAdmin && <span className="text-[10px] bg-primary/20 text-primary px-2 py-1 rounded-full border border-primary/30">وضع المالك</span>}
+      </div>
+
+      {/* نافذة الرمز السري */}
+      {showPin && !isAdmin && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-card p-6 rounded-2xl border border-primary/20 w-full max-w-xs shadow-2xl">
+            <h3 className="font-bold mb-4 text-center flex items-center justify-center gap-2"><Lock size={18}/> دخول المالك</h3>
+            <input 
+              type="password" 
+              placeholder="الرمز السري" 
+              value={pin} 
+              onChange={e => setPin(e.target.value)} 
+              className="w-full p-3 border rounded-xl mb-4 text-center text-xl tracking-widest bg-secondary"
+            />
+            <button onClick={checkPin} className="w-full bg-primary text-white py-3 rounded-xl font-bold">تأكيد</button>
+            <button onClick={() => setShowPin(false)} className="w-full mt-2 text-xs text-muted-foreground text-center">إلغاء</button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid gap-6">
+        {fabrics.map((f: any) => (
+          <div key={f.id} className={`bg-card border rounded-2xl p-4 relative transition-all ${orders[f.id]?.qty > 0 ? "border-primary" : "border-border"}`}>
+            {isAdmin && (
+              <button onClick={() => onFabricsChange(fabrics.filter((x:any) => x.id !== f.id))} className="absolute left-2 top-2 text-destructive p-2 hover:bg-destructive/10 rounded-full"><Trash2 size={16}/></button>
+            )}
+            
+            <div className="flex gap-4">
+              <div className="w-24 h-24 bg-muted rounded-xl overflow-hidden border">
+                <img src={f.image || "/logo.jpg"} className="w-full h-full object-cover" alt={f.name} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold">{f.name}</h3>
+                <p className="text-[10px] text-muted-foreground line-clamp-2 mt-1">{f.description}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-primary font-bold text-lg">{f.price} ر.س</span>
+                  {f.oldPrice && <span className="text-xs line-through text-muted-foreground opacity-50">{f.oldPrice}</span>}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between bg-secondary/30 p-2 rounded-xl border border-border/50">
+              <span className="text-xs font-bold px-2">عدد الثياب:</span>
+              <div className="flex items-center gap-4">
+                <button onClick={() => updateQty(f.id, -1)} className="p-1.5 border rounded-lg bg-background shadow-sm hover:text-destructive"><Minus size={16}/></button>
+                <span className="font-bold text-lg">{(orders[f.id]?.qty || 0)}</span>
+                <button onClick={() => updateQty(f.id, 1)} className="p-1.5 bg-primary text-white rounded-lg shadow-sm hover:brightness-110"><Plus size={16}/></button>
+              </div>
+            </div>
+
+            {/* تفاصيل الخياطة لكل قماش */}
+            {(orders[f.id]?.qty > 0) && (
+              <div className="mt-4 pt-4 border-t border-dashed space-y-4 animate-in fade-in zoom-in-95">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-wider"><Scissors size={14}/> تخصيص الثياب</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <select className="p-2 border rounded-lg text-xs bg-background outline-none focus:ring-1 focus:ring-primary"><option>رقبة قلاب</option><option>رقبة سعودي</option><option>رقبة كويتي</option></select>
+                  <select className="p-2 border rounded-lg text-xs bg-background outline-none focus:ring-1 focus:ring-primary"><option>كبك سادة</option><option>كبك حشوة</option><option>كبك فرنسي</option></select>
+                </div>
+                <textarea placeholder="ملاحظات إضافية لهذا النوع من القماش..." className="w-full p-3 border rounded-lg text-xs h-20 bg-background outline-none focus:ring-1 focus:ring-primary resize-none" />
+              </div>
+            )}
+          </div>
+        ))}
+
+        {isAdmin && (
+          <button className="border-2 border-dashed border-primary/30 rounded-2xl p-8 flex flex-col items-center justify-center text-primary/40 hover:bg-primary/5 hover:text-primary transition-all group">
+            <Plus size={32} className="group-hover:scale-110 transition-transform" />
+            <span className="font-bold mt-2">إضافة ثوب جديد للمتجر</span>
+          </button>
+        )}
+      </div>
+    </section>
+  )
+}
+
